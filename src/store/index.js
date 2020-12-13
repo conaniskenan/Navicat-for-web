@@ -1,11 +1,22 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import Vue from 'vue'
+import Vuex from 'vuex'
 
-Vue.use(Vuex);
+Vue.use(Vuex)
 
 export default new Vuex.Store({
-  state: {},
-  mutations: {},
+  state: {
+    isConnect: false,
+    isClickDatabase: false,
+  },
+  mutations: {
+    isShowConnect(state) {
+      state.isConnect = !state.isConnect
+    },
+    isShowSearch(state, isShow) {
+      state.isClickDatabase = isShow
+    },
+  },
   actions: {},
-  modules: {}
-});
+  getters: {},
+  modules: {},
+})
