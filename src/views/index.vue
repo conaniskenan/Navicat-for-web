@@ -1,6 +1,6 @@
 <!--  -->
 <template>
-  <div class="main">
+  <div class="main" ref="index">
     <el-header>
       <span class="logo">这里是logo</span>
       <!-- <el-menu
@@ -27,13 +27,15 @@
     </el-header>
     <el-container>
       <el-aside width="150px">
-        <el-button type="info" @click="offConnect" v-if="$store.state.isConnect"
+        <el-button type="info" @click="offConnect" v-if="isConnect"
           >断开连接</el-button
         >
         <el-button type="info" icon="el-icon-plus" @click="openConnect" v-else
           >新建连接</el-button
         >
-        <side-bar :indexData="{ connectForm, databaseNum }"></side-bar>
+        <side-bar
+          :indexData="{ connectForm, databaseNum, isConnect }"
+        ></side-bar>
       </el-aside>
       <el-main>
         <el-dialog
@@ -71,8 +73,7 @@
             >
           </div>
         </el-dialog>
-        <nav-search></nav-search>
-        <router-view :key="$route.path"></router-view>
+        <router-view :key="$route.query"></router-view>
       </el-main>
     </el-container>
   </div>
@@ -83,12 +84,11 @@
 //例如：import 《组件名称》 from '《组件路径》';
 /* eslint-disable */
 import sideBar from '@/components/sideBar.vue'
-import navSearch from '@/components/navSearch.vue'
+
 export default {
   //import引入的组件需要注入到对象中才能使用
   components: {
     sideBar,
-    navSearch,
   },
   data() {
     //这里存放数据
@@ -102,6 +102,7 @@ export default {
       },
       connectLoading: false,
       databaseNum: 0,
+      isConnect: false,
     }
   },
   //监听属性 类似于data概念
@@ -110,6 +111,13 @@ export default {
   watch: {},
   //方法集合
   methods: {
+    handIsConnect() {
+      if (localStorage.token) {
+        this.isConnect = true
+      } else {
+        this.isConnect = false
+      }
+    },
     getUrl() {
       //119.29.41.207:5792
       let url = `http://${this.connectForm.host}:${this.connectForm.port}/cors`
@@ -126,8 +134,7 @@ export default {
     //断开连接
     offConnect() {
       localStorage.clear()
-      this.$store.commit('isShowConnect')
-      this.$store.commit('isShowSearch', false)
+      this.handIsConnect()
       this.$router.replace('/')
     },
     //执行测试连接请求
@@ -164,8 +171,7 @@ export default {
           center: true,
         })
         localStorage.setItem('token', data.token)
-        this.$store.commit('isShowConnect')
-
+        this.handIsConnect()
         this.connectDialogFormVisible = false
         this.getDatabeseNum()
       }
@@ -179,10 +185,12 @@ export default {
   //生命周期 - 创建完成（可以访问当前this实例）
   created() {
     document.title = 'nosql'
+    this.handIsConnect()
+    this.getDatabeseNum()
   },
   //生命周期 - 挂载完成（可以访问DOM元素）
   mounted() {
-    this.$router.replace('/')
+    // this.$router.replace('/')
     this.$refs.inputRef.focus()
   },
   beforeCreate() {}, //生命周期 - 创建之前
@@ -197,6 +205,7 @@ export default {
 <style lang="stylus" scoped>
 .main
   height 100%
+  width 100%
   user-select none
   .el-header
     padding 0

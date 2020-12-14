@@ -1,13 +1,14 @@
 <!--  -->
 <template>
-  <div class="sidebar">
-    <el-row class="tac" v-if="$store.state.isConnect">
+  <div class="sidebar" v-if="indexData.isConnect">
+    <el-row class="tac">
       <el-col :span="12">
         <el-menu
           class="el-menu-vertical-demo"
           background-color="#545c64"
           text-color="#fff"
           active-text-color="#ffd04b"
+          :default-active="`1-${parseInt($route.query.num) + 1}`"       
         >
           <el-submenu index="1">
             <template slot="title">
@@ -55,8 +56,7 @@ export default {
   //方法集合
   methods: {
     go(n) {
-      this.$router.replace({ name: 'database', params: { num: n - 1 } })
-      this.$store.commit('isShowSearch', true)
+      this.$router.replace({ path: '/database', query: { num: n - 1 } })
     },
   },
   //生命周期 - 创建完成（可以访问当前this实例）
@@ -78,10 +78,12 @@ export default {
   .el-col
     width 100%
     padding 0
+    overflow hidden
     .el-menu
       width 100%
       padding 0
       .el-submenu
+        overflow hidden
         width 100%
         padding 0 !important
         .database
@@ -92,7 +94,7 @@ export default {
           font-size 16px
           font-style bold
         .el-menu-item
-          width 100% !important
+          width 150px
           padding-left 0 !important
           text-align center
           font-size 18px

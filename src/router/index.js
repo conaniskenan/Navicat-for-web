@@ -10,7 +10,7 @@ const routes = [
     component: index,
     children: [
       {
-        path: '/database/:num',
+        path: '/database',
         name: 'database',
         component: database,
       },
