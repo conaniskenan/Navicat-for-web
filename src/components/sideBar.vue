@@ -4,22 +4,26 @@
     <el-row class="tac">
       <el-col :span="12">
         <el-menu
-          class="el-menu-vertical-demo"
           background-color="#545c64"
           text-color="#fff"
           active-text-color="#ffd04b"
-          :default-active="`1-${parseInt($route.query.num) + 1}`"       
+          :unique-opened="true"
         >
-          <el-submenu index="1">
+          <el-submenu
+            :index="`${indexData.cname[m - 1]}`"
+            v-for="m in indexData.num"
+            :key="m"
+          >
             <template slot="title">
               <img src="../assets/database.png" alt="" class="database" />
-              <span class="databaseName">
-                {{ indexData.connectForm.name }}</span
-              >
+              <span class="databaseName"> {{ indexData.cname[m - 1] }}</span>
             </template>
+            <el-button type="info" class="off" @click="offConnect(m - 1)"
+              >断开连接</el-button
+            >
             <el-menu-item
               @click="go(n)"
-              :index="`1-${n}`"
+              :index="`${indexData.cname[m - 1]}-${n}`"
               v-for="n in indexData.databaseNum"
               :key="n"
               ><img src="../assets/database.png" alt="" class="database" /> --
@@ -47,7 +51,10 @@ export default {
   },
   data() {
     //这里存放数据
-    return {}
+    return {
+      num: 0,
+      cname: [],
+    }
   },
   //监听属性 类似于data概念
   computed: {},
@@ -56,11 +63,33 @@ export default {
   //方法集合
   methods: {
     go(n) {
+      // :default-active="`${parseInt(m)}-${parseInt($route.query.num) + 1}`"
+      localStorage.setItem('key', '')
       this.$router.replace({ path: '/database', query: { num: n - 1 } })
+      this.$store.commit('isShow', true)
+    },
+    getNum() {
+      if (localStorage.getItem('num')) {
+        this.num = parseInt(localStorage.getItem('num'))
+      } else {
+        this.num = 0
+      }
+      this.cname = JSON.parse(localStorage.getItem('name'))
+    },
+    offConnect(n) {
+      localStorage.setItem('num', parseInt(localStorage.getItem('num')) - 1)
+      let name = JSON.parse(localStorage.getItem('name'))
+      name.splice(n, 1)
+      localStorage.setItem('name', JSON.stringify(name))
+      // this.cname = JSON.parse(localStorage.getItem('name'))
+      this.$emit('decrease')
+      this.$store.commit('isShow', false)
     },
   },
   //生命周期 - 创建完成（可以访问当前this实例）
-  created() {},
+  created() {
+    this.getNum()
+  },
   //生命周期 - 挂载完成（可以访问DOM元素）
   mounted() {},
   beforeCreate() {}, //生命周期 - 创建之前
@@ -102,4 +131,7 @@ export default {
           img
             width 14px
             height 16px
+.off
+  width 100%
+  border-radius 0
 </style>

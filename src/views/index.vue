@@ -2,39 +2,18 @@
 <template>
   <div class="main" ref="index">
     <el-header>
-      <span class="logo">这里是logo</span>
-      <!-- <el-menu
-        :default-active="activeIndex"
-        class="el-menu-demo"
-        mode="horizontal"
-      >
-        <el-menu-item index="1">处理中心</el-menu-item>
-        <el-submenu index="2">
-          <template slot="title">我的工作台</template>
-          <el-menu-item index="2-1">选项1</el-menu-item>
-          <el-menu-item index="2-2">选项2</el-menu-item>
-          <el-menu-item index="2-3">选项3</el-menu-item>
-          <el-submenu index="2-4">
-            <template slot="title">选项4</template>
-            <el-menu-item index="2-4-1">选项1</el-menu-item>
-            <el-menu-item index="2-4-2">选项2</el-menu-item>
-            <el-menu-item index="2-4-3">选项3</el-menu-item>
-          </el-submenu>
-        </el-submenu>
-        <el-menu-item index="3" disabled>消息中心</el-menu-item>
-        <el-menu-item index="4">订单管理 </el-menu-item>
-      </el-menu> -->
+      <div class="logo">
+        <img src="../assets/logo.png" alt="QLite" /><span>Qlite</span>
+      </div>
     </el-header>
     <el-container>
       <el-aside width="150px">
-        <el-button type="info" @click="offConnect" v-if="isConnect"
-          >断开连接</el-button
-        >
-        <el-button type="info" icon="el-icon-plus" @click="openConnect" v-else
+        <el-button type="primary" icon="el-icon-plus" @click="openConnect"
           >新建连接</el-button
         >
         <side-bar
-          :indexData="{ connectForm, databaseNum, isConnect }"
+          :indexData="{ num, cname, databaseNum, isConnect }"
+          @decrease="des"
         ></side-bar>
       </el-aside>
       <el-main>
@@ -55,7 +34,10 @@
               <el-input v-model="connectForm.port"></el-input>
             </el-form-item>
             <el-form-item label="密 码">
-              <el-input v-model="connectForm.password"></el-input>
+              <el-input
+                v-model="connectForm.password"
+                type="password"
+              ></el-input>
             </el-form-item>
           </el-form>
           <div slot="footer" class="dialog-footer">
@@ -73,7 +55,7 @@
             >
           </div>
         </el-dialog>
-        <router-view :key="$route.query"></router-view>
+        <router-view :key="$route.fullPath"></router-view>
       </el-main>
     </el-container>
   </div>
@@ -100,9 +82,11 @@ export default {
         port: '5792',
         password: 'admin',
       },
+      cname: [],
       connectLoading: false,
       databaseNum: 0,
       isConnect: false,
+      num: 0,
     }
   },
   //监听属性 类似于data概念
@@ -122,6 +106,10 @@ export default {
       //119.29.41.207:5792
       let url = `http://${this.connectForm.host}:${this.connectForm.port}/cors`
       return url
+    },
+
+    getPath() {
+      localStorage.setItem('key', qs.parse(this.$route.query).key ?? '')
     },
     //打开连接
     openConnect() {
@@ -170,7 +158,22 @@ export default {
           type: 'success',
           center: true,
         })
+        console.log(localStorage.getItem('name'))
+        if (localStorage.getItem('name') !== null) {
+          this.cname = JSON.parse(localStorage.getItem('name'))
+          this.cname.push(this.connectForm.name)
+          localStorage.setItem('name', JSON.stringify(this.cname))
+        } else {
+          this.cname.push(this.connectForm.name)
+          localStorage.setItem('name', JSON.stringify(this.cname))
+        }
         localStorage.setItem('token', data.token)
+        if (localStorage.getItem('num')) {
+          this.num = parseInt(localStorage.getItem('num')) + 1
+        } else {
+          this.num = 1
+        }
+        localStorage.setItem('num', this.num)
         this.handIsConnect()
         this.connectDialogFormVisible = false
         this.getDatabeseNum()
@@ -181,12 +184,29 @@ export default {
       let { data } = await this.$http.get(`${this.getUrl()}/token/database`)
       this.databaseNum = data.num
     },
+    getNum() {
+      if (localStorage.getItem('num')) {
+        this.num = parseInt(localStorage.getItem('num'))
+      } else {
+        this.num = 0
+      }
+      if (localStorage.getItem('name') !== null) {
+        this.cname = JSON.parse(localStorage.getItem('name'))
+      } else {
+        localStorage.setItem('name', JSON.stringify(this.cname))
+      }
+    },
+    des() {
+      this.num = parseInt(localStorage.getItem('num'))
+      this.cname = JSON.parse(localStorage.getItem('name'))
+    },
   },
   //生命周期 - 创建完成（可以访问当前this实例）
   created() {
-    document.title = 'nosql'
+    document.title = 'QLite'
     this.handIsConnect()
     this.getDatabeseNum()
+    this.getNum()
   },
   //生命周期 - 挂载完成（可以访问DOM元素）
   mounted() {
@@ -209,10 +229,27 @@ export default {
   user-select none
   .el-header
     padding 0
+    background-color #2B3A42
+    opacity 0.7
+    overflow hidden
     .logo
       display inline-block
-      margin-top 10px
-      font-size 30px
+      height 100%
+      img
+        width 60px
+        height 60px
+        margin-left 15px
+        border-radius 50%
+        margin-right 15px
+        box-shadow 0px 0px 10px #E0E6E7
+      span
+        display inline-block
+        font-size 40px
+        height 60px
+        line-height 60px
+        vertical-align top 
+        color #E0E6E7
+        // opacity 0.8
     .el-menu
       position absolute
       top 0
@@ -223,6 +260,7 @@ export default {
       height 70px
   .el-container
     height 100%
+    min-width 800px
     .el-aside
       background #fff
       .el-button

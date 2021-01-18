@@ -1,38 +1,40 @@
 <!--  -->
 <template>
-  <div class="database">
+  <div class="database" v-if="$store.state.show">
     <div class="search">
       <el-row :gutter="10">
-        <el-col :span="8">
+        <el-col :xs="4" :sm="6" :md="8" :lg="10" :xl="8">
           <!-- 搜索 -->
-          <div class="grid-content bg-purple">
-            <el-input
-              v-model="searchData"
-              placeholder="请输入key值进行搜索"
-              clearable
-              @clear="search"
-              @change="search"
-              @click="search"
-              @input="search"
-              class="setInput"
-            >
-              <el-button
-                slot="append"
-                icon="el-icon-search"
-                class="btnSearch"
-              ></el-button>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="1">
-          <div class="grid-content bg-purple">
+          <el-input
+            v-model="searchData"
+            placeholder="请输入key值进行搜索"
+            clearable
+            @clear="search"
+            @change="search"
+            @click="search"
+            @input="search"
+            class="setInput"
+          >
             <el-button
-              type="warning"
-              @click="isShow = true"
-              class="appendSearch"
-              >添加数据</el-button
-            >
-          </div>
+              slot="append"
+              icon="el-icon-search"
+              class="btnSearch"
+            ></el-button>
+          </el-input>
+        </el-col>
+        <el-col :xs="10" :sm="8" :md="8" :lg="8" :xl="6">
+          <el-button type="warning" @click="isShow = true" class="appendSearch"
+            >添加数据</el-button
+          >
+        </el-col>
+        <el-col :xs="1" :sm="1" :md="1" :lg="1" :xl="1" class="go">
+          <el-button
+            v-if="isReturn"
+            type="info"
+            @click="toPre"
+            class="appendSearch"
+            >返回上层</el-button
+          >
         </el-col>
       </el-row>
     </div>
@@ -42,9 +44,9 @@
           <span>{{ (page - 1) * limit + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="type" label="type" width="400px" align="center">
+      <el-table-column prop="type" label="type" min-width="22%" align="center">
       </el-table-column>
-      <el-table-column prop="key" label="key" width="520px" align="center">
+      <el-table-column prop="key" label="key" min-width="22%" align="center">
         <template slot-scope="scope">
           <div
             @dblclick="DoubleChange(scope.$index)"
@@ -62,9 +64,9 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="time" label="time" width="400px" align="center">
+      <el-table-column prop="time" label="time" min-width="20%" align="center">
       </el-table-column>
-      <el-table-column label="操作" align="center">
+      <el-table-column label="操作" align="center" min-width="15%">
         <template slot-scope="scope">
           <el-button size="small" @click="handleEdit(scope.row)"
             >详情</el-button
@@ -130,6 +132,7 @@
 //这里可以导入其他文件（比如：组件，工具js，第三方插件js，json文件，图片文件等等）
 //例如：import 《组件名称》 from '《组件路径》';
 /* eslint-disable */
+import qs from 'qs'
 export default {
   //import引入的组件需要注入到对象中才能使用
   components: {},
@@ -159,6 +162,8 @@ export default {
       databaseList: [],
       editable: [],
       pre_keyName: '',
+      curPath: '',
+      isReturn: false,
       searchData: '',
       filterList: [],
       limit: 10,
@@ -177,16 +182,20 @@ export default {
       let url = `http://${this.connectForm.host}:${this.connectForm.port}/cors`
       return url
     },
+    getPath() {
+      localStorage.setItem('key', qs.parse(this.$route.query).key ?? '')
+    },
     async getCurrentDataBase(num) {
       let { data } = await this.$http.post(`${this.getUrl()}/token/use`, {
         number: num,
       })
-      localStorage.clear()
       localStorage.setItem('token', data.token)
       this.getCurrentDataBase1()
     },
     async getCurrentDataBase1() {
-      let { data } = await this.$http.get(`${this.getUrl()}/token/selectx`)
+      let { data } = await this.$http.get(
+        `${this.getUrl()}/token/selectx${localStorage.getItem('key')}`
+      )
       this.databaseList = data.array
       this.databaseList.forEach((item) => {
         if (item.is_durable) {
@@ -199,10 +208,13 @@ export default {
       this.getFilterList()
     },
     async renameKey(row) {
-      let { data } = await this.$http.post(`${this.getUrl()}/token/renamex`, {
-        key: this.pre_keyName,
-        new_key: this.filterList[row].key,
-      })
+      let { data } = await this.$http.post(
+        `${this.getUrl()}/token/renamex${localStorage.getItem('key')}`,
+        {
+          key: this.pre_keyName,
+          new_key: this.filterList[row].key,
+        }
+      )
       this.getCurrentDataBase1()
     },
     DoubleChange(row) {
@@ -225,9 +237,12 @@ export default {
       this.renameKey(row)
     },
     async handleDelete(row) {
-      let { data } = await this.$http.post(`${this.getUrl()}/token/del`, {
-        keys: [row.key],
-      })
+      let { data } = await this.$http.post(
+        `${this.getUrl()}/token/del${localStorage.getItem('key')}`,
+        {
+          keys: [row.key],
+        }
+      )
       if (data.code == 200) {
         this.getCurrentDataBase1()
         this.$message({
@@ -249,16 +264,19 @@ export default {
       this.isShow = false
       try {
         if (this.dataForm.type.value == 'string') {
-          let { data } = await this.$http.post(`${this.getUrl()}/token/sset`, {
-            data: [
-              {
-                key: this.dataForm.key,
-                time: this.dataForm.time,
-                type: this.dataForm.type.value,
-                value: this.dataForm.value,
-              },
-            ],
-          })
+          let { data } = await this.$http.post(
+            `${this.getUrl()}/token/sset${localStorage.getItem('key')}`,
+            {
+              data: [
+                {
+                  key: this.dataForm.key,
+                  time: this.dataForm.time,
+                  type: this.dataForm.type.value,
+                  value: this.dataForm.value,
+                },
+              ],
+            }
+          )
           if (data.code == 200) {
             console.log(data)
             this.$message({
@@ -270,11 +288,14 @@ export default {
             this.getCurrentDataBase1()
           }
         } else {
-          let { data } = await this.$http.post(`${this.getUrl()}/token/set`, {
-            key: this.dataForm.key,
-            time: this.dataForm.time,
-            type: this.dataForm.type.value,
-          })
+          let { data } = await this.$http.post(
+            `${this.getUrl()}/token/set${localStorage.getItem('key')}`,
+            {
+              key: this.dataForm.key,
+              time: this.dataForm.time,
+              type: this.dataForm.type.value,
+            }
+          )
           if (data.code == 200) {
             console.log(data)
             this.$message({
@@ -300,17 +321,25 @@ export default {
     },
     async handleEdit(row) {
       if (row.type == 'string') {
-        let { data } = await this.$http.post(`${this.getUrl()}/token/sget`, {
-          keys: [row.key],
-        })
+        let { data } = await this.$http.post(
+          `${this.getUrl()}/token/sget${localStorage.getItem('key')}`,
+          {
+            keys: [row.key],
+          }
+        )
         this.$alert(`${data.strs[0]}`, `${row.type}`, {
           confirmButtonText: '确定',
           center: true,
         })
       } else if (row.type == 'hash') {
+        let key = localStorage.getItem('key')
+        localStorage.setItem('key', `${key}/${row.key}`)
         this.$router.replace({
           path: '/database',
-          query: { num: 2, key: row.key },
+          query: {
+            num: this.$route.query.num,
+            key: localStorage.getItem('key'),
+          },
         })
       }
     },
@@ -339,10 +368,32 @@ export default {
       this.page = 1
       this.getFilterList()
     },
+    toPre() {
+      let path = localStorage.getItem('key')
+      let num = path.lastIndexOf('/')
+      path = path.slice(0, num)
+      localStorage.setItem('key', path)
+      this.$router.replace({
+        path: '/database',
+        query: {
+          num: this.$route.query.num,
+          key: localStorage.getItem('key'),
+        },
+      })
+    },
+    isShowReturn() {
+      if (localStorage.getItem('key') == '') {
+        this.isReturn = false
+      } else {
+        this.isReturn = true
+      }
+    },
   },
   //生命周期 - 创建完成（可以访问当前this实例）
   created() {
     this.getCurrentDataBase(parseInt(this.$route.query.num))
+    this.getPath()
+    this.isShowReturn()
   },
   //生命周期 - 挂载完成（可以访问DOM元素）
   mounted() {},
@@ -385,7 +436,7 @@ export default {
         font-size 20px
         border-radius none
       .btnSearch
-        width 90px
+        width 110px
     .appendSearch
       height 70px
       width 120px
@@ -396,4 +447,7 @@ export default {
   transform translate(50%)
   margin-left -40%
   margin-top 30px
+.go
+  position absolute
+  right 80px
 </style>
